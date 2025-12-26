@@ -23,7 +23,7 @@ function App() {
   const [mostrarConfirmarBorrar, setMostrarConfirmarBorrar] = useState<{id: number, tabla: string} | null>(null);
 
   // --- ESTADOS DE DATOS ---
-  const fechaInicial = "2025-01-01";
+  const fechaInicial = "2026-01-01";
   const [datos, setDatos] = useState({
     titulo: "", autor: "", director: "", fecha: fechaInicial,
     valoracion: 0, descripcion: "", etiquetas: [] as string[],
@@ -92,12 +92,25 @@ function App() {
     return `${day}/${month}/${year}`;
   };
 
+  // ACTUALIZACIÓN: Borrado de un solo dígito con "⌫"
   const manejarTecla = (num: string) => {
+    if (num === "⌫") {
+      setPin(prev => prev.slice(0, -1));
+      return;
+    }
+    if (num === "C") {
+      setPin("");
+      return;
+    }
+
     if (pin.length < 5) {
       const nuevoPin = pin + num;
       setPin(nuevoPin);
       if (nuevoPin === PIN_CORRECTO) setAccesoConcedido(true);
-      else if (nuevoPin.length === 5) { alert("PIN Incorrecto"); setPin(""); }
+      else if (nuevoPin.length === 5) { 
+        alert("PIN Incorrecto"); 
+        setPin("");
+      }
     }
   };
 
@@ -108,7 +121,6 @@ function App() {
     }));
   };
 
-  // --- CARGA DE DATOS ---
   const cargarHistorial = async () => {
     setCargando(true);
     const tablas = ['libros', 'peliculas', 'deporte', 'conciertos', 'ocio'];
@@ -125,7 +137,6 @@ function App() {
     if (pantalla === "historial" || pantalla === "kpis") cargarHistorial(); 
   }, [pantalla]);
 
-  // --- LÓGICA DE FILTRADO ---
   const registrosFiltrados = registros.filter(reg => {
     const cumpleCat = filtroCategorias.includes(reg.categoria_id);
     if (filtroTiempo === "Todo") return cumpleCat;
@@ -137,7 +148,6 @@ function App() {
     return cumpleCat;
   });
 
-  // --- CÁLCULO DE ESTADÍSTICAS ---
   const statsKPI = useMemo(() => {
     const resumen = ['libros', 'peliculas', 'deporte', 'conciertos', 'ocio'].map(c => {
       const regsCat = registrosFiltrados.filter(r => r.categoria_id === c);
@@ -153,7 +163,6 @@ function App() {
     if (filtroCategorias.length !== 1) return null;
     const cat = filtroCategorias[0];
     const dataMap: { [key: string]: number } = {};
-
     registrosFiltrados.forEach(r => {
       if (cat === 'deporte' && r.tipo_deporte) {
         dataMap[r.tipo_deporte] = (dataMap[r.tipo_deporte] || 0) + 1;
@@ -165,31 +174,59 @@ function App() {
         });
       }
     });
-
     return Object.keys(dataMap).map(key => ({ name: key, valor: dataMap[key] }))
       .sort((a, b) => b.valor - a.valor);
   }, [filtroCategorias, registrosFiltrados]);
 
+  // ACTUALIZACIÓN: Lógica de evolución temporal dinámica (Días, Semanas o Meses)
   const datosEvolucion = useMemo(() => {
+    const hoy = new Date();
+    
+    if (filtroTiempo === "Últimos 7 días") {
+      const diasSemana = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+      return Array.from({ length: 7 }).map((_, i) => {
+        const d = new Date();
+        d.setDate(hoy.getDate() - (6 - i));
+        const item: any = { name: diasSemana[d.getDay()] };
+        filtroCategorias.forEach(cat => {
+          item[cat] = registrosFiltrados.filter(r => {
+            const dr = new Date(r.fecha);
+            return dr.toDateString() === d.toDateString() && r.categoria_id === cat;
+          }).length;
+        });
+        return item;
+      });
+    }
+
+    if (filtroTiempo === "Último mes") {
+      const nombreMes = hoy.toLocaleString('es-ES', { month: 'long' });
+      const diasEnMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+      return Array.from({ length: diasEnMes }).map((_, i) => {
+        const dia = i + 1;
+        const item: any = { name: dia.toString(), mes: nombreMes };
+        filtroCategorias.forEach(cat => {
+          item[cat] = registrosFiltrados.filter(r => {
+            const dr = new Date(r.fecha);
+            return dr.getDate() === dia && dr.getMonth() === hoy.getMonth() && r.categoria_id === cat;
+          }).length;
+        });
+        return item;
+      });
+    }
+
+    // Default: Todo (Vista por meses)
     const mesesNombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    const datosPorMes = mesesNombres.map((mes, index) => {
-      const item: any = { name: mes, tieneDatos: false };
+    return mesesNombres.map((mes, index) => {
+      const item: any = { name: mes };
       filtroCategorias.forEach(cat => {
-        const count = registrosFiltrados.filter(r => {
+        item[cat] = registrosFiltrados.filter(r => {
           const d = new Date(r.fecha);
           return d.getMonth() === index && r.categoria_id === cat;
         }).length;
-        item[cat] = count;
-        if (count > 0) item.tieneDatos = true;
       });
       return item;
     });
-
-    const ultimoMesConDatos = [...datosPorMes].reverse().findIndex(d => d.tieneDatos);
-    if (ultimoMesConDatos === -1) return datosPorMes.slice(0, 1); 
-    const indexCorte = datosPorMes.length - ultimoMesConDatos;
-    return datosPorMes.slice(0, indexCorte);
-  }, [registrosFiltrados, filtroCategorias]);
+  }, [registrosFiltrados, filtroCategorias, filtroTiempo]);
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -269,7 +306,7 @@ function App() {
         </div>
         <div style={tecladoGrid}>
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"].map(t => (
-            <button key={t} onClick={() => t === "C" || t === "⌫" ? setPin("") : manejarTecla(t)} style={{...botonTecla, backgroundColor: theme.btnGhost, color: theme.text}}>{t}</button>
+            <button key={t} onClick={() => manejarTecla(t)} style={{...botonTecla, backgroundColor: theme.btnGhost, color: theme.text}}>{t}</button>
           ))}
         </div>
       </div>
@@ -295,7 +332,6 @@ function App() {
         <div style={lineaMenu}></div><div style={lineaMenu}></div><div style={lineaMenu}></div>
       </button>
 
-      {/* --- PANTALLA INICIO (MODIFICADA: CENTRADA) --- */}
       {pantalla === "inicio" && (
         <div style={contenedorInicio}>
           <div style={{ textAlign: 'center', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -308,7 +344,6 @@ function App() {
         </div>
       )}
 
-      {/* --- PANTALLA CATEGORÍAS --- */}
       {pantalla === "categorias" && (
         <div style={{ padding: "100px 24px" }}>
           <button onClick={() => setPantalla("inicio")} style={btnVolver}>← Volver</button>
@@ -323,7 +358,6 @@ function App() {
         </div>
       )}
 
-      {/* --- PANTALLA FORMULARIO --- */}
       {pantalla === "formulario" && (
         <div style={{ padding: "100px 24px", paddingBottom: "120px" }}>
           <button onClick={() => { setPantalla(editandoId ? "historial" : "categorias"); resetForm(); }} style={btnVolver}>← Volver</button>
@@ -354,7 +388,7 @@ function App() {
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
               <label style={{ fontSize: "14px", color: theme.textSec }}>Fecha *</label>
-              <input type="date" required min="2025-01-01" value={datos.fecha} style={{...estiloInput, backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.border}} onChange={e => setDatos({...datos, fecha: e.target.value})} />
+              <input type="date" required min="2026-01-01" value={datos.fecha} style={{...estiloInput, backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.border}} onChange={e => setDatos({...datos, fecha: e.target.value})} />
             </div>
             {categoriaSel !== 'deporte' && (
               <div style={{ textAlign: "center", background: theme.btnGhost, padding: "15px", borderRadius: "12px" }}>
@@ -384,7 +418,6 @@ function App() {
         </div>
       )}
 
-      {/* --- PANTALLA HISTORIAL (MODIFICADA: FILTROS SIN SCROLL) --- */}
       {pantalla === "historial" && (
         <div style={{ padding: "100px 24px", paddingBottom: "100px" }}>
           <button onClick={() => setPantalla("inicio")} style={btnVolver}>← Inicio</button>
@@ -401,7 +434,8 @@ function App() {
               <button key={t} onClick={() => setFiltroTiempo(t === '7 días' ? 'Últimos 7 días' : t === '1 mes' ? 'Último mes' : 'Todo')} style={{ flex: 1, padding: "10px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold", border: "none", backgroundColor: (filtroTiempo === t || (t === '7 días' && filtroTiempo === 'Últimos 7 días') || (t === '1 mes' && filtroTiempo === 'Último mes')) ? "#0047bb" : theme.btnGhost, color: (filtroTiempo === t || (t === '7 días' && filtroTiempo === 'Últimos 7 días') || (t === '1 mes' && filtroTiempo === 'Último mes')) ? "#fff" : theme.textSec }}>{t}</button>
             ))}
           </div>
-          {registrosFiltrados.length === 0 ? <p style={{textAlign:'center', color:'#999'}}>No hay registros aquí.</p> : 
+          {registrosFiltrados.length === 0 ?
+            <p style={{textAlign:'center', color:'#999'}}>No hay registros aquí.</p> : 
             registrosFiltrados.map((reg, idx) => {
               const esExpandido = registroExpandido === idx;
               return (
@@ -440,7 +474,6 @@ function App() {
         </div>
       )}
 
-      {/* --- PANTALLA MIS KPIs (MODIFICADA: FILTROS SIN SCROLL) --- */}
       {pantalla === "kpis" && (
         <div style={{ padding: "100px 24px 40px" }}>
           <button onClick={() => setPantalla("inicio")} style={btnVolver}>← Inicio</button>
@@ -470,6 +503,7 @@ function App() {
                 </div>
               )}
             </div>
+            
             {statsDetalladas && statsDetalladas.length > 0 && (
               <div style={cardKPILargo}>
                 <span style={labelKPI}>Análisis de {filtroCategorias[0].toUpperCase()}</span>
@@ -486,6 +520,7 @@ function App() {
                 </div>
               </div>
             )}
+            
             {filtroCategorias.some(c => ['libros', 'peliculas', 'conciertos', 'ocio'].includes(c)) && (
               <div style={cardKPILargo}>
                 <span style={labelKPI}>Valoraciones Medias</span>
@@ -510,6 +545,7 @@ function App() {
                 </div>
               </div>
             )}
+
             {filtroCategorias.length > 1 && (
               <div style={cardKPILargo}>
                 <span style={labelKPI}>Categorías</span>
@@ -528,8 +564,9 @@ function App() {
                 </div>
               </div>
             )}
+
             <div style={cardKPILargo}>
-              <span style={labelKPI}>Evolución Temporal</span>
+              <span style={labelKPI}>Evolución Temporal {filtroTiempo === 'Último mes' ? `(${new Date().toLocaleString('es-ES', { month: 'long' })})` : ''}</span>
               <div style={{ width: '100%', height: '280px', marginTop: '10px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={datosEvolucion} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -549,12 +586,12 @@ function App() {
         </div>
       )}
 
-      {/* --- PANTALLA AJUSTES --- */}
+      {/* ACTUALIZACIÓN: Pantalla Ajustes con firma al final */}
       {pantalla === "ajustes" && (
-        <div style={{ padding: "100px 24px" }}>
+        <div style={{ padding: "100px 24px", minHeight: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
           <button onClick={() => setPantalla("inicio")} style={btnVolver}>← Inicio</button>
           <h2 style={{ marginBottom: "30px" }}>Ajustes</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "15px", flex: 1 }}>
             <div style={{...tarjetaLarga, backgroundColor: theme.card, borderColor: theme.border, alignItems: 'center'}} onClick={() => setDarkMode(!darkMode)}>
               <span>{darkMode ? "☀️ Modo Claro" : "🌙 Modo Oscuro"}</span>
               <div style={{width: '40px', height: '20px', borderRadius: '10px', backgroundColor: darkMode ? '#0047bb' : '#ccc', position: 'relative'}}>
@@ -568,11 +605,13 @@ function App() {
               <span>🚪 Cerrar Sesión</span>
             </div>
           </div>
-          <p style={{textAlign: 'center', marginTop: '40px', color: theme.textSec, fontSize: '12px'}}>App desarrollada por Marta Carballo</p>
+          
+          <footer style={{ textAlign: 'center', padding: '20px 0', color: theme.textSec, fontSize: '14px', borderTop: `1px solid ${theme.border}`, marginTop: '20px' }}>
+            App desarrollada por Marta Carballo
+          </footer>
         </div>
       )}
 
-      {/* --- MENU SIDEBAR --- */}
       {menuAbierto && (
         <div style={{...sidebar, backgroundColor: theme.card}}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
@@ -592,7 +631,7 @@ function App() {
   );
 }
 
-// --- ESTILOS ---
+// --- ESTILOS (IGUALES AL ORIGINAL) ---
 const cardKPILargo = { width: '100%', boxSizing: 'border-box' as 'border-box', border: '1px solid #eee', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' };
 const labelKPI = { fontSize: '11px', color: '#888', display: 'block', marginBottom: '8px', textTransform: 'uppercase' as 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold' as 'bold' };
 const valorKPI = { fontSize: '28px', fontWeight: 'bold' as 'bold', color: '#0047bb' };

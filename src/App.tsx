@@ -456,24 +456,17 @@ function App() {
               </div>
             ))}
           </div>
-
-          {/* Filtros de Tiempo */}
           <div style={{ display: "flex", gap: "8px", marginBottom: "25px" }}>
             {['Últimos 7 días', 'Último mes', 'Todo'].map(t => (
               <button key={t} onClick={() => setFiltroTiempo(t)} style={{ flex: 1, padding: "10px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold", border: "none", backgroundColor: filtroTiempo === t ? "#0047bb" : "#f1f3f4", color: filtroTiempo === t ? "#fff" : "#5f6368" }}>{t}</button>
             ))}
           </div>
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
-            {/* Grid de Resumen Superior */}
             <div style={{ display: 'grid', gridTemplateColumns: filtroCategorias.includes('deporte') ? '1fr 1fr' : '1fr', gap: '15px' }}>
               <div style={cardKPILargo}>
                 <span style={labelKPI}>Total de Registros</span>
                 <div style={valorKPI}>{statsKPI.total}</div>
               </div>
-              
-              {/* Solo mostramos Deporte si la categoría está activa */}
               {filtroCategorias.includes('deporte') && (
                 <div style={cardKPILargo}>
                   <span style={labelKPI}>Tiempo Total Deporte</span>
@@ -481,8 +474,6 @@ function App() {
                 </div>
               )}
             </div>
-
-            {/* TARJETA DINÁMICA: ANÁLISIS DETALLADO (Solo si hay 1 categoría) */}
             {statsDetalladas && statsDetalladas.length > 0 && (
               <div style={cardKPILargo}>
                 <span style={labelKPI}>Análisis de {filtroCategorias[0].toUpperCase()}</span>
@@ -499,8 +490,6 @@ function App() {
                 </div>
               </div>
             )}
-
-            {/* TARJETA DE VALORACIONES (Solo si hay alguna categoría de valoración activa) */}
             {filtroCategorias.some(c => ['libros', 'peliculas', 'conciertos', 'ocio'].includes(c)) && (
               <div style={cardKPILargo}>
                 <span style={labelKPI}>Valoraciones Medias</span>
@@ -513,7 +502,6 @@ function App() {
                       : null;
                     
                     if (!media) return null;
-
                     return (
                       <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '14px', textTransform: 'capitalize', fontWeight: '500' }}>
@@ -526,14 +514,9 @@ function App() {
                       </div>
                     );
                   })}
-                  {registrosFiltrados.filter(r => r.categoria_id !== 'deporte' && r.valoracion > 0).length === 0 && (
-                    <p style={{fontSize: '12px', color: '#999', textAlign: 'center'}}>Sin valoraciones</p>
-                  )}
                 </div>
               </div>
             )}
-
-            {/* Gráfico de Sectores: Solo si hay más de una seleccionada */}
             {filtroCategorias.length > 1 && (
               <div style={cardKPILargo}>
                 <span style={labelKPI}>Categorías</span>
@@ -552,8 +535,6 @@ function App() {
                 </div>
               </div>
             )}
-
-            {/* Gráfico de Evolución: Solo muestra las líneas de las categorías seleccionadas */}
             <div style={cardKPILargo}>
               <span style={labelKPI}>Evolución Temporal</span>
               <div style={{ width: '100%', height: '280px', marginTop: '10px' }}>
@@ -580,7 +561,6 @@ function App() {
         <div style={{ padding: "100px 24px" }}>
           <button onClick={() => setPantalla("inicio")} style={btnVolver}>← Inicio</button>
           <h2 style={{ marginBottom: "30px" }}>Ajustes</h2>
-          
           <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
             <div style={{...tarjetaLarga, backgroundColor: theme.card, borderColor: theme.border, alignItems: 'center'}} onClick={() => setDarkMode(!darkMode)}>
               <span>{darkMode ? "☀️ Modo Claro" : "🌙 Modo Oscuro"}</span>
@@ -588,16 +568,13 @@ function App() {
                 <div style={{width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: darkMode ? '22px' : '2px', transition: '0.2s'}}></div>
               </div>
             </div>
-
             <div style={{...tarjetaLarga, backgroundColor: theme.card, borderColor: theme.border}} onClick={exportarCSV}>
               <span>📤 Exportar datos (CSV)</span>
             </div>
-
             <div style={{...tarjetaLarga, backgroundColor: '#fff1f1', borderColor: '#ffcccc', color: '#ff4d4d'}} onClick={cerrarSesion}>
               <span>🚪 Cerrar Sesión</span>
             </div>
           </div>
-          
           <p style={{textAlign: 'center', marginTop: '40px', color: theme.textSec, fontSize: '12px'}}>App desarrollada por Marta Carballo</p>
         </div>
       )}
@@ -635,17 +612,5 @@ const lineaMenu = { width: "24px", height: "3px", backgroundColor: "#fff" };
 const estiloCentradoLogin = { height: "100vh", display: "flex", flexDirection: "column" as "column", justifyContent: "center", alignItems: "center" };
 const tecladoGrid = { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "15px" };
 const botonTecla = { width: '70px', height: '70px', borderRadius: "50%", border: "none", fontSize: "22px" };
-const btnVolver = { background: "none", border: "none", color: "#0047bb", fontWeight: "bold" as "bold", marginBottom: "15px", cursor: "pointer" };
-const estiloInput = { padding: "16px", borderRadius: "12px", border: "1px solid #dfe1e5", width: "100%", boxSizing: "border-box" as "border-box" };
-const tarjetaLarga = { padding: "20px", borderRadius: "16px", display: "flex", justifyContent: "space-between", fontWeight: "bold" as "bold", border: "1px solid #eee", cursor: "pointer" };
-const sidebar = { position: "fixed" as "fixed", top: 0, left: 0, width: "80%", height: "100%", zIndex: 1001, padding: "30px", boxShadow: "10px 0 30px rgba(0,0,0,0.1)" };
-const itemMenuMenu = { padding: "16px 20px", borderRadius: "12px", fontSize: "18px", display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" };
-const btnGuardarOriginal = { backgroundColor: "#0047bb", color: "#fff", border: "none", borderRadius: "28px", padding: "18px", fontSize: "18px", fontWeight: "bold" as "bold", cursor: "pointer" };
-const btnCircularAccion = { border: 'none', borderRadius: '50%', width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px' };
-const overlayModal = { position: 'fixed' as 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, padding: '20px' };
-const cardModal = { padding: '30px', borderRadius: '20px', width: '100%', maxWidth: '400px', textAlign: 'center' as 'center' };
-const btnModalCancel = { padding: '12px 20px', borderRadius: '12px', border: 'none', fontWeight: 'bold' as 'bold', flex: 1 };
-const btnModalConfirm = { padding: '12px 20px', borderRadius: '12px', border: 'none', backgroundColor: '#ff4d4d', color: '#fff', fontWeight: 'bold' as 'bold', flex: 1 };
 
 export default App;
-

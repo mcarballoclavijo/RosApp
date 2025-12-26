@@ -22,16 +22,14 @@ function App() {
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [mostrarConfirmarBorrar, setMostrarConfirmarBorrar] = useState<{id: number, tabla: string} | null>(null);
 
- // --- ESTADOS DE DATOS ---
- const fechaHoy = new Date().toISOString().split('T')[0]; // Selecciona hoy por defecto
- const [datos, setDatos] = useState({
-   titulo: "", autor: "", director: "", 
-   fecha: fechaHoy, // Cambiado a la fecha de hoy para facilitar pruebas
-   valoracion: 0, descripcion: "", etiquetas: [] as string[],
-   tipo_deporte: "", duracion: "", km: "",
-   lugar: "", cantante: "", tipo_ocio_manual: ""
- });
-
+  // --- ESTADOS DE DATOS ---
+  const fechaInicial = "2026-01-01";
+  const [datos, setDatos] = useState({
+    titulo: "", autor: "", director: "", fecha: fechaInicial,
+    valoracion: 0, descripcion: "", etiquetas: [] as string[],
+    tipo_deporte: "", duracion: "", km: "",
+    lugar: "", cantante: "", tipo_ocio_manual: ""
+  });
   const [registros, setRegistros] = useState<any[]>([]);
   const [filtroCategorias, setFiltroCategorias] = useState<string[]>(['libros', 'peliculas', 'deporte', 'conciertos', 'ocio']);
   const [filtroTiempo, setFiltroTiempo] = useState("Todo");
@@ -248,7 +246,7 @@ function App() {
 
   const resetForm = () => {
     setDatos({
-      titulo: "", autor: "", director: "", fecha: fechaHoy,
+      titulo: "", autor: "", director: "", fecha: fechaInicial,
       valoracion: 0, descripcion: "", etiquetas: [] as string[],
       tipo_deporte: "", duracion: "", km: "",
       lugar: "", cantante: "", tipo_ocio_manual: ""
@@ -297,16 +295,16 @@ function App() {
         <div style={lineaMenu}></div><div style={lineaMenu}></div><div style={lineaMenu}></div>
       </button>
 
-      {/* --- PANTALLA INICIO --- */}
+      {/* --- PANTALLA INICIO (MODIFICADA: CENTRADA) --- */}
       {pantalla === "inicio" && (
         <div style={contenedorInicio}>
-          <div style={{ textAlign: 'left', width: '100%' }}>
+          <div style={{ textAlign: 'center', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <h1 style={{...tituloGrande, color: theme.text}}>Bienvenida<br/>Rosa</h1>
-            <p style={{...subtitulo, color: theme.textSec}}>Controla tu día a día con RosApp</p>
+            <p style={{...subtitulo, color: theme.textSec, maxWidth: 'none', marginBottom: '40px'}}>Controla tu día a día con RosApp</p>
+            <button onClick={() => { resetForm(); setPantalla("categorias"); }} style={btnNuevoRegistroCuadrado}>
+              + Nuevo registro
+            </button>
           </div>
-          <button onClick={() => { resetForm(); setPantalla("categorias"); }} style={btnNuevoRegistroCuadrado}>
-            + Nuevo registro
-          </button>
         </div>
       )}
 
@@ -386,21 +384,21 @@ function App() {
         </div>
       )}
 
-      {/* --- PANTALLA HISTORIAL --- */}
+      {/* --- PANTALLA HISTORIAL (MODIFICADA: FILTROS SIN SCROLL) --- */}
       {pantalla === "historial" && (
         <div style={{ padding: "100px 24px", paddingBottom: "100px" }}>
           <button onClick={() => setPantalla("inicio")} style={btnVolver}>← Inicio</button>
           <h2 style={{ marginBottom: "20px" }}>Tu Historial</h2>
-          <div style={{ display: "flex", gap: "10px", overflowX: "auto", paddingBottom: "10px" }}>
-            {[{ id: 'libros', n: 'Libros', i: '📚' }, { id: 'peliculas', n: 'Películas', i: '🎬' }, { id: 'deporte', n: 'Deporte', i: '💪' }, { id: 'conciertos', n: 'Conciertos', i: '🎸' }, { id: 'ocio', n: 'Ocio', i: '💃' }].map(cat => (
-              <div key={cat.id} onClick={() => toggleFiltroCat(cat.id)} style={{ padding: "10px 14px", borderRadius: "12px", fontSize: "14px", whiteSpace: "nowrap", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontWeight: "bold", backgroundColor: filtroCategorias.includes(cat.id) ? "#0047bb" : theme.btnGhost, color: filtroCategorias.includes(cat.id) ? "#fff" : theme.textSec }}>
-                <span>{cat.i}</span> <span>{cat.n}</span>
+          <div style={{ display: "flex", gap: "5px", marginBottom: "10px", width: "100%" }}>
+            {[{ id: 'libros', n: 'Libros', i: '📚' }, { id: 'peliculas', n: 'Pelis', i: '🎬' }, { id: 'deporte', n: 'Deporte', i: '💪' }, { id: 'conciertos', n: 'Concierto', i: '🎸' }, { id: 'ocio', n: 'Ocio', i: '💃' }].map(cat => (
+              <div key={cat.id} onClick={() => toggleFiltroCat(cat.id)} style={{ flex: 1, padding: "10px 4px", borderRadius: "10px", fontSize: "11px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", fontWeight: "bold", backgroundColor: filtroCategorias.includes(cat.id) ? "#0047bb" : theme.btnGhost, color: filtroCategorias.includes(cat.id) ? "#fff" : theme.textSec, border: '1px solid transparent' }}>
+                <span style={{fontSize: '16px'}}>{cat.i}</span> <span>{cat.n}</span>
               </div>
             ))}
           </div>
           <div style={{ display: "flex", gap: "8px", margin: "10px 0 20px 0" }}>
-            {['Últimos 7 días', 'Último mes', 'Todo'].map(t => (
-              <button key={t} onClick={() => setFiltroTiempo(t)} style={{ flex: 1, padding: "10px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold", border: "none", backgroundColor: filtroTiempo === t ? "#0047bb" : theme.btnGhost, color: filtroTiempo === t ? "#fff" : theme.textSec }}>{t}</button>
+            {['7 días', '1 mes', 'Todo'].map(t => (
+              <button key={t} onClick={() => setFiltroTiempo(t === '7 días' ? 'Últimos 7 días' : t === '1 mes' ? 'Último mes' : 'Todo')} style={{ flex: 1, padding: "10px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold", border: "none", backgroundColor: (filtroTiempo === t || (t === '7 días' && filtroTiempo === 'Últimos 7 días') || (t === '1 mes' && filtroTiempo === 'Último mes')) ? "#0047bb" : theme.btnGhost, color: (filtroTiempo === t || (t === '7 días' && filtroTiempo === 'Últimos 7 días') || (t === '1 mes' && filtroTiempo === 'Último mes')) ? "#fff" : theme.textSec }}>{t}</button>
             ))}
           </div>
           {registrosFiltrados.length === 0 ? <p style={{textAlign:'center', color:'#999'}}>No hay registros aquí.</p> : 
@@ -442,23 +440,21 @@ function App() {
         </div>
       )}
 
-      {/* --- PANTALLA MIS KPIs ACTUALIZADA --- */}
+      {/* --- PANTALLA MIS KPIs (MODIFICADA: FILTROS SIN SCROLL) --- */}
       {pantalla === "kpis" && (
         <div style={{ padding: "100px 24px 40px" }}>
           <button onClick={() => setPantalla("inicio")} style={btnVolver}>← Inicio</button>
           <h2 style={{ marginBottom: "20px" }}>Mis KPIs</h2>
-
-          {/* Filtros de Categoría */}
-          <div style={{ display: "flex", gap: "10px", overflowX: "auto", paddingBottom: "10px", marginBottom: "5px" }}>
-            {[{ id: 'libros', n: 'Libros', i: '📚' }, { id: 'peliculas', n: 'Películas', i: '🎬' }, { id: 'deporte', n: 'Deporte', i: '💪' }, { id: 'conciertos', n: 'Conciertos', i: '🎸' }, { id: 'ocio', n: 'Ocio', i: '💃' }].map(cat => (
-              <div key={cat.id} onClick={() => toggleFiltroCat(cat.id)} style={{ padding: "10px 14px", borderRadius: "12px", fontSize: "14px", whiteSpace: "nowrap", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontWeight: "bold", backgroundColor: filtroCategorias.includes(cat.id) ? "#0047bb" : "#f1f3f4", color: filtroCategorias.includes(cat.id) ? "#fff" : "#5f6368" }}>
-                <span>{cat.i}</span> <span>{cat.n}</span>
+          <div style={{ display: "flex", gap: "5px", marginBottom: "10px", width: "100%" }}>
+            {[{ id: 'libros', n: 'Libros', i: '📚' }, { id: 'peliculas', n: 'Pelis', i: '🎬' }, { id: 'deporte', n: 'Deporte', i: '💪' }, { id: 'conciertos', n: 'Concierto', i: '🎸' }, { id: 'ocio', n: 'Ocio', i: '💃' }].map(cat => (
+              <div key={cat.id} onClick={() => toggleFiltroCat(cat.id)} style={{ flex: 1, padding: "10px 4px", borderRadius: "10px", fontSize: "11px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", fontWeight: "bold", backgroundColor: filtroCategorias.includes(cat.id) ? "#0047bb" : "#f1f3f4", color: filtroCategorias.includes(cat.id) ? "#fff" : "#5f6368" }}>
+                <span style={{fontSize: '16px'}}>{cat.i}</span> <span>{cat.n}</span>
               </div>
             ))}
           </div>
           <div style={{ display: "flex", gap: "8px", marginBottom: "25px" }}>
-            {['Últimos 7 días', 'Último mes', 'Todo'].map(t => (
-              <button key={t} onClick={() => setFiltroTiempo(t)} style={{ flex: 1, padding: "10px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold", border: "none", backgroundColor: filtroTiempo === t ? "#0047bb" : "#f1f3f4", color: filtroTiempo === t ? "#fff" : "#5f6368" }}>{t}</button>
+            {['7 días', '1 mes', 'Todo'].map(t => (
+              <button key={t} onClick={() => setFiltroTiempo(t === '7 días' ? 'Últimos 7 días' : t === '1 mes' ? 'Último mes' : 'Todo')} style={{ flex: 1, padding: "10px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold", border: "none", backgroundColor: (filtroTiempo === t || (t === '7 días' && filtroTiempo === 'Últimos 7 días') || (t === '1 mes' && filtroTiempo === 'Último mes')) ? "#0047bb" : "#f1f3f4", color: (filtroTiempo === t || (t === '7 días' && filtroTiempo === 'Últimos 7 días') || (t === '1 mes' && filtroTiempo === 'Último mes')) ? "#fff" : "#5f6368" }}>{t}</button>
             ))}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -497,10 +493,7 @@ function App() {
                   {['libros', 'peliculas', 'conciertos', 'ocio'].map(cat => {
                     if (!filtroCategorias.includes(cat)) return null;
                     const regsConVal = registrosFiltrados.filter(r => r.categoria_id === cat && r.valoracion > 0);
-                    const media = regsConVal.length > 0 
-                      ? (regsConVal.reduce((acc, curr) => acc + curr.valoracion, 0) / regsConVal.length).toFixed(1)
-                      : null;
-                    
+                    const media = regsConVal.length > 0 ? (regsConVal.reduce((acc, curr) => acc + curr.valoracion, 0) / regsConVal.length).toFixed(1) : null;
                     if (!media) return null;
                     return (
                       <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -556,7 +549,7 @@ function App() {
         </div>
       )}
 
-      {/* --- PANTALLA AJUSTES (NUEVA) --- */}
+      {/* --- PANTALLA AJUSTES --- */}
       {pantalla === "ajustes" && (
         <div style={{ padding: "100px 24px" }}>
           <button onClick={() => setPantalla("inicio")} style={btnVolver}>← Inicio</button>
@@ -612,5 +605,16 @@ const lineaMenu = { width: "24px", height: "3px", backgroundColor: "#fff" };
 const estiloCentradoLogin = { height: "100vh", display: "flex", flexDirection: "column" as "column", justifyContent: "center", alignItems: "center" };
 const tecladoGrid = { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "15px" };
 const botonTecla = { width: '70px', height: '70px', borderRadius: "50%", border: "none", fontSize: "22px" };
+const btnVolver = { background: "none", border: "none", color: "#0047bb", fontWeight: "bold" as "bold", marginBottom: "15px", cursor: "pointer" };
+const estiloInput = { padding: "16px", borderRadius: "12px", border: "1px solid #dfe1e5", width: "100%", boxSizing: "border-box" as "border-box" };
+const tarjetaLarga = { padding: "20px", borderRadius: "16px", display: "flex", justifyContent: "space-between", fontWeight: "bold" as "bold", border: "1px solid #eee", cursor: "pointer" };
+const sidebar = { position: "fixed" as "fixed", top: 0, left: 0, width: "80%", height: "100%", zIndex: 1001, padding: "30px", boxShadow: "10px 0 30px rgba(0,0,0,0.1)" };
+const itemMenuMenu = { padding: "16px 20px", borderRadius: "12px", fontSize: "18px", display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" };
+const btnGuardarOriginal = { backgroundColor: "#0047bb", color: "#fff", border: "none", borderRadius: "28px", padding: "18px", fontSize: "18px", fontWeight: "bold" as "bold", cursor: "pointer" };
+const btnCircularAccion = { border: 'none', borderRadius: '50%', width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px' };
+const overlayModal = { position: 'fixed' as 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, padding: '20px' };
+const cardModal = { padding: '30px', borderRadius: '20px', width: '100%', maxWidth: '400px', textAlign: 'center' as 'center' };
+const btnModalCancel = { padding: '12px 20px', borderRadius: '12px', border: 'none', fontWeight: 'bold' as 'bold', flex: 1 };
+const btnModalConfirm = { padding: '12px 20px', borderRadius: '12px', border: 'none', backgroundColor: '#ff4d4d', color: '#fff', fontWeight: 'bold' as 'bold', flex: 1 };
 
 export default App;

@@ -248,7 +248,7 @@ function App() {
 
   const resetForm = () => {
     setDatos({
-      titulo: "", autor: "", director: "", fecha: fechaInicial,
+      titulo: "", autor: "", director: "", fecha: fechaHoy,
       valoracion: 0, descripcion: "", etiquetas: [] as string[],
       tipo_deporte: "", duracion: "", km: "",
       lugar: "", cantante: "", tipo_ocio_manual: ""

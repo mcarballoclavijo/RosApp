@@ -23,9 +23,9 @@ function App() {
   const [mostrarConfirmarBorrar, setMostrarConfirmarBorrar] = useState<{id: number, tabla: string} | null>(null);
 
   // --- ESTADOS DE DATOS ---
-  const fechaInicial = "2026-01-01";
+  const fechaInicial = new Date().toISOString().split('T')[0];
   const [datos, setDatos] = useState({
-    titulo: "", autor: "", director: "", fecha: fechaInicial,
+    titulo: "", autor: "", director: "", fecha: new Date().toISOString().split('T')[0],
     valoracion: 0, descripcion: "", etiquetas: [] as string[],
     tipo_deporte: "", duracion: "", km: "",
     lugar: "", cantante: "", tipo_ocio_manual: ""
@@ -388,7 +388,7 @@ function App() {
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
               <label style={{ fontSize: "14px", color: theme.textSec }}>Fecha *</label>
-              <input type="date" required min="2026-01-01" value={datos.fecha} style={{...estiloInput, backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.border}} onChange={e => setDatos({...datos, fecha: e.target.value})} />
+              <input type="date" required min="2025-01-01" value={datos.fecha} style={{...estiloInput, backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.border}} onChange={e => setDatos({...datos, fecha: e.target.value})} />
             </div>
             {categoriaSel !== 'deporte' && (
               <div style={{ textAlign: "center", background: theme.btnGhost, padding: "15px", borderRadius: "12px" }}>

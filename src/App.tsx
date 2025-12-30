@@ -34,6 +34,12 @@ function App() {
   const [filtroCategorias, setFiltroCategorias] = useState<string[]>(['libros', 'peliculas', 'deporte', 'conciertos', 'ocio']);
   const [filtroTiempo, setFiltroTiempo] = useState("Todo");
 
+  // --- ESTADOS NUEVOS HISTORIAL ---
+  const [busqueda, setBusqueda] = useState("");
+  const [soloMejorValorados, setSoloMejorValorados] = useState(false);
+  const [pagina, setPagina] = useState(1);
+  const registrosPorPagina = 15;
+
   const PIN_CORRECTO = "28010";
   const COLORES_KPI = { libros: '#ff4d4d', peliculas: '#4db8ff', deporte: '#82ca9d', conciertos: '#ff944d', ocio: '#ffdb4d' };
 
@@ -92,7 +98,6 @@ function App() {
     return `${day}/${month}/${year}`;
   };
 
-  // ACTUALIZACIÓN: Borrado de un solo dígito con "⌫"
   const manejarTecla = (num: string) => {
     if (num === "⌫") {
       setPin(prev => prev.slice(0, -1));
@@ -137,16 +142,48 @@ function App() {
     if (pantalla === "historial" || pantalla === "kpis") cargarHistorial(); 
   }, [pantalla]);
 
-  const registrosFiltrados = registros.filter(reg => {
-    const cumpleCat = filtroCategorias.includes(reg.categoria_id);
-    if (filtroTiempo === "Todo") return cumpleCat;
-    const fechaReg = new Date(reg.fecha).getTime();
-    const hoy = new Date().getTime();
-    const diffDias = (hoy - fechaReg) / (1000 * 3600 * 24);
-    if (filtroTiempo === "Últimos 7 días") return cumpleCat && diffDias <= 7;
-    if (filtroTiempo === "Último mes") return cumpleCat && diffDias <= 30;
-    return cumpleCat;
-  });
+  // --- LÓGICA DE FILTRADO Y BUSQUEDA ---
+  const registrosFiltrados = useMemo(() => {
+    let filtrados = registros.filter(reg => {
+      const cumpleCat = filtroCategorias.includes(reg.categoria_id);
+      let cumpleTiempo = true;
+      if (filtroTiempo !== "Todo") {
+        const fechaReg = new Date(reg.fecha).getTime();
+        const hoy = new Date().getTime();
+        const diffDias = (hoy - fechaReg) / (1000 * 3600 * 24);
+        if (filtroTiempo === "Últimos 7 días") cumpleTiempo = diffDias <= 7;
+        else if (filtroTiempo === "Último mes") cumpleTiempo = diffDias <= 30;
+      }
+      return cumpleCat && cumpleTiempo;
+    });
+
+    // Filtro por buscador
+    if (busqueda.trim() !== "") {
+      const b = busqueda.toLowerCase();
+      filtrados = filtrados.filter(r => 
+        (r.titulo?.toLowerCase().includes(b)) || 
+        (r.cantante?.toLowerCase().includes(b)) || 
+        (r.tipo_deporte?.toLowerCase().includes(b)) ||
+        (r.autor?.toLowerCase().includes(b)) ||
+        (r.descripcion?.toLowerCase().includes(b))
+      );
+    }
+
+    // Ordenar por mejor valorados si el botón está activo
+    if (soloMejorValorados) {
+      filtrados = [...filtrados].sort((a, b) => (b.valoracion || 0) - (a.valoracion || 0));
+    }
+
+    return filtrados;
+  }, [registros, filtroCategorias, filtroTiempo, busqueda, soloMejorValorados]);
+
+  // Paginación
+  const registrosPaginados = useMemo(() => {
+    const inicio = (pagina - 1) * registrosPorPagina;
+    return registrosFiltrados.slice(inicio, inicio + registrosPorPagina);
+  }, [registrosFiltrados, pagina]);
+
+  const totalPaginas = Math.ceil(registrosFiltrados.length / registrosPorPagina);
 
   const statsKPI = useMemo(() => {
     const resumen = ['libros', 'peliculas', 'deporte', 'conciertos', 'ocio'].map(c => {
@@ -178,7 +215,6 @@ function App() {
       .sort((a, b) => b.valor - a.valor);
   }, [filtroCategorias, registrosFiltrados]);
 
-  // ACTUALIZACIÓN: Lógica de evolución temporal dinámica (Días, Semanas o Meses)
   const datosEvolucion = useMemo(() => {
     const hoy = new Date();
     
@@ -214,7 +250,6 @@ function App() {
       });
     }
 
-    // Default: Todo (Vista por meses)
     const mesesNombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
     return mesesNombres.map((mes, index) => {
       const item: any = { name: mes };
@@ -293,6 +328,7 @@ function App() {
 
   const toggleFiltroCat = (cat: string) => {
     setFiltroCategorias(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]);
+    setPagina(1); // Resetear a pag 1 al filtrar
   };
 
   if (!accesoConcedido) {
@@ -422,6 +458,16 @@ function App() {
         <div style={{ padding: "100px 24px", paddingBottom: "100px" }}>
           <button onClick={() => setPantalla("inicio")} style={btnVolver}>← Inicio</button>
           <h2 style={{ marginBottom: "20px" }}>Tu Historial</h2>
+
+          {/* BUSCADOR */}
+          <input 
+            type="text" 
+            placeholder="🔍 Buscar título, autor, descripción..." 
+            value={busqueda}
+            onChange={(e) => { setBusqueda(e.target.value); setPagina(1); }}
+            style={{ ...estiloInput, marginBottom: '15px', backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.border }}
+          />
+
           <div style={{ display: "flex", gap: "5px", marginBottom: "10px", width: "100%" }}>
             {[{ id: 'libros', n: 'Libros', i: '📚' }, { id: 'peliculas', n: 'Pelis', i: '🎬' }, { id: 'deporte', n: 'Deporte', i: '💪' }, { id: 'conciertos', n: 'Concierto', i: '🎸' }, { id: 'ocio', n: 'Ocio', i: '💃' }].map(cat => (
               <div key={cat.id} onClick={() => toggleFiltroCat(cat.id)} style={{ flex: 1, padding: "10px 4px", borderRadius: "10px", fontSize: "11px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", fontWeight: "bold", backgroundColor: filtroCategorias.includes(cat.id) ? "#0047bb" : theme.btnGhost, color: filtroCategorias.includes(cat.id) ? "#fff" : theme.textSec, border: '1px solid transparent' }}>
@@ -429,14 +475,23 @@ function App() {
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", gap: "8px", margin: "10px 0 20px 0" }}>
+
+          <div style={{ display: "flex", gap: "8px", margin: "10px 0 20px 0", alignItems: 'center' }}>
             {['7 días', '1 mes', 'Todo'].map(t => (
-              <button key={t} onClick={() => setFiltroTiempo(t === '7 días' ? 'Últimos 7 días' : t === '1 mes' ? 'Último mes' : 'Todo')} style={{ flex: 1, padding: "10px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold", border: "none", backgroundColor: (filtroTiempo === t || (t === '7 días' && filtroTiempo === 'Últimos 7 días') || (t === '1 mes' && filtroTiempo === 'Último mes')) ? "#0047bb" : theme.btnGhost, color: (filtroTiempo === t || (t === '7 días' && filtroTiempo === 'Últimos 7 días') || (t === '1 mes' && filtroTiempo === 'Último mes')) ? "#fff" : theme.textSec }}>{t}</button>
+              <button key={t} onClick={() => { setFiltroTiempo(t === '7 días' ? 'Últimos 7 días' : t === '1 mes' ? 'Último mes' : 'Todo'); setPagina(1); }} style={{ flex: 1, padding: "10px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold", border: "none", backgroundColor: (filtroTiempo === t || (t === '7 días' && filtroTiempo === 'Últimos 7 días') || (t === '1 mes' && filtroTiempo === 'Último mes')) ? "#0047bb" : theme.btnGhost, color: (filtroTiempo === t || (t === '7 días' && filtroTiempo === 'Últimos 7 días') || (t === '1 mes' && filtroTiempo === 'Último mes')) ? "#fff" : theme.textSec }}>{t}</button>
             ))}
+            {/* BOTÓN MEJOR VALORADOS */}
+            <button 
+              onClick={() => { setSoloMejorValorados(!soloMejorValorados); setPagina(1); }}
+              style={{ padding: "10px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold", border: "none", backgroundColor: soloMejorValorados ? "#FBBC04" : theme.btnGhost, color: soloMejorValorados ? "#fff" : theme.textSec, cursor: 'pointer' }}
+            >
+              ↑⭐
+            </button>
           </div>
-          {registrosFiltrados.length === 0 ?
+
+          {registrosPaginados.length === 0 ?
             <p style={{textAlign:'center', color:'#999'}}>No hay registros aquí.</p> : 
-            registrosFiltrados.map((reg, idx) => {
+            registrosPaginados.map((reg, idx) => {
               const esExpandido = registroExpandido === idx;
               return (
                 <div key={idx} style={{ padding: "15px", borderRadius: "12px", border: `1px solid ${theme.border}`, marginBottom: "12px", backgroundColor: theme.card }}>
@@ -471,6 +526,15 @@ function App() {
               );
             })
           }
+
+          {/* PAGINACIÓN */}
+          {totalPaginas > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginTop: '20px' }}>
+              <button disabled={pagina === 1} onClick={() => setPagina(p => p - 1)} style={{ ...btnCircularAccion, backgroundColor: theme.btnGhost, opacity: pagina === 1 ? 0.5 : 1 }}>◀</button>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Página {pagina} de {totalPaginas}</span>
+              <button disabled={pagina === totalPaginas} onClick={() => setPagina(p => p + 1)} style={{ ...btnCircularAccion, backgroundColor: theme.btnGhost, opacity: pagina === totalPaginas ? 0.5 : 1 }}>▶</button>
+            </div>
+          )}
         </div>
       )}
 
@@ -586,7 +650,6 @@ function App() {
         </div>
       )}
 
-      {/* ACTUALIZACIÓN: Pantalla Ajustes con firma al final */}
       {pantalla === "ajustes" && (
         <div style={{ padding: "100px 24px", minHeight: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
           <button onClick={() => setPantalla("inicio")} style={btnVolver}>← Inicio</button>
@@ -631,7 +694,7 @@ function App() {
   );
 }
 
-// --- ESTILOS (IGUALES AL ORIGINAL) ---
+// --- ESTILOS ---
 const cardKPILargo = { width: '100%', boxSizing: 'border-box' as 'border-box', border: '1px solid #eee', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' };
 const labelKPI = { fontSize: '11px', color: '#888', display: 'block', marginBottom: '8px', textTransform: 'uppercase' as 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold' as 'bold' };
 const valorKPI = { fontSize: '28px', fontWeight: 'bold' as 'bold', color: '#0047bb' };
